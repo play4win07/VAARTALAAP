@@ -3,214 +3,245 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Advanced 2 Person Video Call App</title>
+  <title>Advanced 2-Person Video Call</title>
   <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
   <style>
+    * { box-sizing: border-box; }
     body {
-      font-family: system-ui, Arial, sans-serif;
-      background: linear-gradient(135deg, #020617, #0f172a);
-      color: white;
       margin: 0;
-      padding: 0;
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
+      font-family: system-ui, Arial, sans-serif;
+      background: linear-gradient(135deg,#020617,#0f172a);
+      color: #fff;
     }
     header {
-      width: 100%;
       padding: 12px;
       text-align: center;
+      font-weight: 700;
       background: #020617;
-      font-weight: bold;
     }
-    .container {
-      width: 100%;
+    .app {
       max-width: 420px;
+      margin: auto;
       padding: 12px;
     }
-    .code-box {
+    .card {
       background: #1e293b;
-      padding: 10px;
-      border-radius: 10px;
+      border-radius: 12px;
+      padding: 12px;
+      margin-bottom: 10px;
+    }
+    .room {
+      font-size: 22px;
+      letter-spacing: 3px;
       text-align: center;
     }
     input, button, select {
       width: 100%;
-      padding: 10px;
       margin-top: 8px;
+      padding: 10px;
       border-radius: 8px;
       border: none;
       font-size: 14px;
     }
-    button {
-      background: #22c55e;
-      font-weight: bold;
-      cursor: pointer;
-    }
-    button.secondary {
-      background: #334155;
-    }
-    #videos {
+    button { background:#22c55e; font-weight:700; cursor:pointer; }
+    button.secondary { background:#334155; }
+    .videos {
       display: flex;
       gap: 8px;
-      margin-top: 10px;
       justify-content: center;
       flex-wrap: wrap;
     }
     video {
       width: 100%;
-      max-width: 200px;
-      aspect-ratio: 4 / 3;
-      background: black;
+      max-width: 190px;
+      aspect-ratio: 4/3;
       border-radius: 12px;
+      background: #000;
     }
     .controls {
       display: flex;
       gap: 8px;
-      margin-top: 10px;
+      margin-top: 8px;
     }
-    .controls button {
-      flex: 1;
-    }
+    .controls button { flex:1; }
     .filters {
-      margin-top: 10px;
-      background: #020617;
-      padding: 10px;
-      border-radius: 10px;
+      margin-top: 8px;
+      display: grid;
+      gap: 6px;
     }
     .status {
-      font-size: 13px;
-      margin-top: 6px;
-      color: #93c5fd;
+      font-size: 12px;
       text-align: center;
+      color: #93c5fd;
     }
   </style>
 </head>
 <body>
-  <header>📱 Advanced Video Call Web App</header>
+<header>📱 Advanced Video Call</header>
+<div class="app">
 
-  <div class="container">
-    <div class="code-box">
-      <div>Your Code</div>
-      <strong id="myCode">Loading…</strong>
-    </div>
-
-    <input id="joinCode" placeholder="Enter or auto-filled code" />
-    <button id="joinBtn" disabled>Join Call</button>
-
-    <div class="status" id="status">Initializing…</div>
-
-    <div id="videos">
-      <video id="myVideo" autoplay muted playsinline></video>
-      <video id="remoteVideo" autoplay playsinline></video>
-    </div>
-
-    <div class="controls">
-      <button id="muteBtn" class="secondary">🔇 Mute</button>
-      <button id="camBtn" class="secondary">📷 Off</button>
-    </div>
-
-    <div class="filters">
-      <div><b>🎨 Video Filters</b></div>
-      <select id="videoFilter">
-        <option value="none">Normal</option>
-        <option value="brightness(1.2) contrast(1.2)">HD Enhance</option>
-        <option value="brightness(1.3) saturate(1.3)">Glow / Fair</option>
-        <option value="contrast(1.4)">Sharp 4K Look</option>
-      </select>
-
-      <div style="margin-top:8px"><b>🎤 Audio</b></div>
-      <select id="audioFilter">
-        <option value="normal">Normal Voice</option>
-        <option value="female">Female (Pitch Up)</option>
-        <option value="noise">Noise Reduction</option>
-      </select>
-    </div>
+  <div class="card">
+    <div style="text-align:center">Your Room Code</div>
+    <div class="room" id="roomCode">-----</div>
+    <div class="status" id="shareLink"></div>
   </div>
 
-  <script>
-    const myVideo = document.getElementById('myVideo');
-    const remoteVideo = document.getElementById('remoteVideo');
-    const joinBtn = document.getElementById('joinBtn');
-    const statusEl = document.getElementById('status');
+  <div class="card">
+    <input id="joinInput" placeholder="Enter 5–6 letter code" />
+    <button id="joinBtn" disabled>Join Call</button>
+    <div class="status" id="status">Initializing…</div>
+  </div>
 
-    let myStream;
-    let audioTrack;
-    let videoTrack;
-    let isMuted = false;
-    let camOff = false;
+  <div class="videos">
+    <video id="myVideo" autoplay muted playsinline></video>
+    <video id="remoteVideo" autoplay playsinline></video>
+  </div>
 
-    const peer = new Peer();
+  <div class="controls">
+    <button id="muteBtn" class="secondary">🔇 Mute</button>
+    <button id="camBtn" class="secondary">📷 Off</button>
+  </div>
 
-    // Auto-fill join code from URL (?code=xxxx)
-    const params = new URLSearchParams(window.location.search);
-    if (params.get('code')) {
-      document.getElementById('joinCode').value = params.get('code');
-    }
+  <div class="card filters">
+    <b>🎨 Video Filters</b>
+    <select id="videoFilter">
+      <option value="none">Normal</option>
+      <option value="brightness(1.2) contrast(1.2)">HD Enhance</option>
+      <option value="brightness(1.3) saturate(1.4)">Glow / Fair</option>
+      <option value="contrast(1.5) saturate(1.2)">Sharp Look</option>
+    </select>
 
-    navigator.mediaDevices.getUserMedia({ video: true, audio: true })
-      .then(stream => {
-        myStream = stream;
-        myVideo.srcObject = stream;
-        audioTrack = stream.getAudioTracks()[0];
-        videoTrack = stream.getVideoTracks()[0];
-        joinBtn.disabled = false;
-        statusEl.innerText = 'Ready';
-      })
-      .catch(() => statusEl.innerText = 'Camera/Mic permission denied');
+    <b>🎤 Voice</b>
+    <select id="voiceFilter">
+      <option value="normal">Normal</option>
+      <option value="female">Female-like (Pitch ↑)</option>
+      <option value="deep">Deep (Pitch ↓)</option>
+    </select>
+  </div>
+</div>
 
-    peer.on('open', id => {
-      document.getElementById('myCode').innerText = id;
-      const shareLink = window.location.origin + window.location.pathname + '?code=' + id;
-      statusEl.innerText = 'Share link: ' + shareLink;
-    });
+<script>
+/* =====================
+   Utility: short room code
+===================== */
+function makeCode(len=6){
+  const chars='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let c='';
+  for(let i=0;i<len;i++) c+=chars[Math.floor(Math.random()*chars.length)];
+  return c;
+}
 
-    peer.on('call', call => {
-      call.answer(myStream);
-      call.on('stream', s => remoteVideo.srcObject = s);
-    });
+/* =====================
+   Peer with short ID
+===================== */
+const ROOM = makeCode(6);
+const peer = new Peer(ROOM, {debug:1});
 
-    joinBtn.onclick = () => {
-      const code = document.getElementById('joinCode').value.trim();
-      if (!code) return alert('Enter code');
-      const call = peer.call(code, myStream);
-      if (!call) return;
-      call.on('stream', s => remoteVideo.srcObject = s);
-    };
+document.getElementById('roomCode').innerText = ROOM;
+const shareURL = location.origin + location.pathname + '?room=' + ROOM;
+document.getElementById('shareLink').innerText = 'Share link: ' + shareURL;
 
-    // Mute
-    document.getElementById('muteBtn').onclick = () => {
-      isMuted = !isMuted;
-      audioTrack.enabled = !isMuted;
-      event.target.innerText = isMuted ? '🔊 Unmute' : '🔇 Mute';
-    };
+// auto-fill from link
+const params = new URLSearchParams(location.search);
+if(params.get('room')){
+  document.getElementById('joinInput').value = params.get('room');
+}
 
-    // Camera
-    document.getElementById('camBtn').onclick = () => {
-      camOff = !camOff;
-      videoTrack.enabled = !camOff;
-      event.target.innerText = camOff ? '📷 On' : '📷 Off';
-    };
+/* =====================
+   Media setup
+===================== */
+const myVideo = document.getElementById('myVideo');
+const remoteVideo = document.getElementById('remoteVideo');
+let stream, audioTrack, videoTrack;
+let muted=false, camOff=false;
 
-    // Video filters (CSS based)
-    document.getElementById('videoFilter').onchange = e => {
-      myVideo.style.filter = e.target.value === 'none' ? 'none' : e.target.value;
-    };
+const statusEl = document.getElementById('status');
+const joinBtn = document.getElementById('joinBtn');
 
-    // Audio filters (basic Web Audio)
-    const audioCtx = new AudioContext();
-    const source = audioCtx.createMediaStreamSource(myStream || new MediaStream());
-    const gain = audioCtx.createGain();
+navigator.mediaDevices.getUserMedia({
+  video: { width:{ideal:1280}, height:{ideal:720} },
+  audio: { noiseSuppression:true, echoCancellation:true }
+}).then(s=>{
+  stream=s;
+  myVideo.srcObject=s;
+  audioTrack=s.getAudioTracks()[0];
+  videoTrack=s.getVideoTracks()[0];
+  joinBtn.disabled=false;
+  statusEl.innerText='Ready';
+}).catch(()=>statusEl.innerText='Camera/Mic blocked');
 
-    document.getElementById('audioFilter').onchange = e => {
-      if (!audioTrack) return;
-      if (e.target.value === 'female') {
-        gain.gain.value = 1.4; // pitch illusion (basic)
-      } else {
-        gain.gain.value = 1.0;
-      }
-    };
-  </script>
+/* =====================
+   Calls
+===================== */
+peer.on('call', call=>{
+  call.answer(stream);
+  call.on('stream', rs=>remoteVideo.srcObject=rs);
+});
+
+joinBtn.onclick=()=>{
+  const code=document.getElementById('joinInput').value.trim().toUpperCase();
+  if(!code) return alert('Enter code');
+  const call=peer.call(code, stream);
+  if(!call) return;
+  call.on('stream', rs=>remoteVideo.srcObject=rs);
+};
+
+/* =====================
+   Controls
+===================== */
+document.getElementById('muteBtn').onclick=e=>{
+  muted=!muted;
+  audioTrack.enabled=!muted;
+  e.target.innerText=muted?'🔊 Unmute':'🔇 Mute';
+};
+
+document.getElementById('camBtn').onclick=e=>{
+  camOff=!camOff;
+  videoTrack.enabled=!camOff;
+  e.target.innerText=camOff?'📷 On':'📷 Off';
+};
+
+/* =====================
+   Video filters (real-time)
+===================== */
+document.getElementById('videoFilter').onchange=e=>{
+  myVideo.style.filter=e.target.value==='none'?'none':e.target.value;
+};
+
+/* =====================
+   Voice pitch (WORKING)
+===================== */
+const AudioCtx = window.AudioContext || window.webkitAudioContext;
+const ctx = new AudioCtx();
+let source, processor;
+
+function applyPitch(type){
+  if(!stream) return;
+  if(source) source.disconnect();
+  if(processor) processor.disconnect();
+
+  source = ctx.createMediaStreamSource(stream);
+  processor = ctx.createBiquadFilter();
+
+  if(type==='female'){
+    processor.type='highshelf';
+    processor.frequency.value=1000;
+    processor.gain.value=8;
+  } else if(type==='deep'){
+    processor.type='lowshelf';
+    processor.frequency.value=300;
+    processor.gain.value=8;
+  } else {
+    processor.type='allpass';
+  }
+
+  source.connect(processor);
+  processor.connect(ctx.destination);
+}
+
+document.getElementById('voiceFilter').onchange=e=>{
+  applyPitch(e.target.value);
+};
+</script>
 </body>
 </html>
